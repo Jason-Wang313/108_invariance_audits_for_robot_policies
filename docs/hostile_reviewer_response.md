@@ -2,21 +2,25 @@
 
         Paper: 108 Invariance Audits for Robot Policies
 
-        ## Strongest Prior-Work Threats
+        ## Strongest Technical Threats
         - SQP-Based Mobile Manipulator Motion Planning With Controlled Infeasibility for Physically Valid Task Failure (2013)
 - The Design and Evaluation of an Ergonomic Contactless Gesture Control System for Industrial Robots (2018)
 - Coordinated Robustness Evaluation Framework for Vision-Language Models (2025)
-- The Evaluation Bottleneck of Vision-Language-Action Models: A Evaluation-Centric Survey ()
+- The Evaluation Bottleneck of Vision-Language-Action Models: A Evaluation-Centric Survey (n.d.)
 - Cobot User Frame Calibration: Evaluation and Comparison between Positioning Repeatability Performances Achieved by Traditional and Vision-Based Methods (2021)
 - Evaluation of Image Enhancement Techniques for Vision-Based Navigation under Low Illumination (2019)
+- The influence of tactile information on the human evaluation of tactile properties (2021)
+- OmniEEG-Bench: A Standardized Evaluation Benchmark for EEG Foundation Models (2026)
 
-        ## Response
-        The paper no longer claims that generic world modeling, generic uncertainty, or larger datasets are novel. The defensible contribution is the combination of explicit unrealized physical branches, a tail-risk objective over those branches, diagnostic probing, and failure memory.
+        ## ICLR Main Response
+        A hostile ICLR reviewer would be correct to reject this as a main-conference submission. The v2 paper has reproducible synthetic evidence and careful limitations, but it does not contain the real robot, high-fidelity simulator, learned model, or manual related-work depth needed for the ICLR main track.
 
-        ## What Is Not Claimed
-        - No real-robot state of the art.
-        - No proof that the branch atlas can always discover the true hidden mode.
-        - No claim that advisor-name matches imply relevance.
+        ## Honest Action
+        The paper is marked `KILL_ARCHIVE`. This avoids converting a generated workshop-style idea into an overstated main-conference claim.
 
-        ## Remaining Reviewer Risk
-        A main-conference reviewer can still reject the work for synthetic-only evidence. The correct venue state is `WORKSHOP_ONLY` until hardware or high-fidelity simulation validation is added.
+        ## What Would Be Needed To Revive
+        - Real robot or high-fidelity benchmark experiments.
+        - Implemented model and baselines, not synthetic probability tables.
+        - Manual full-paper related-work audit.
+        - Paper-specific writing and figures.
+        - Evidence that the core mechanism is learned and useful under deployment shift.
