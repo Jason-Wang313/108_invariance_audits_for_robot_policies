@@ -1,6 +1,7 @@
 # Claims
 
-- Mechanism claim: Invariance audits for robot policies keeps action-critical alternatives explicit until a physical observation collapses them.
-- Evidence claim: the included synthetic experiment tests hidden physical-mode perturbations and compares observed-only, augmented-data, uncertainty, and proposed variants.
-- Scope claim: results support mechanism plausibility, not real-robot deployment.
-- Unsupported claim explicitly avoided: no claim of SOTA robot performance.
+- Mechanism claim: robot-policy invariances must be audited for physical validity, not only statistical consistency.
+- Evidence claim: the included local benchmark tests valid perceptual/geometric shifts and invalid physical shifts such as mirror-handed contact, material/friction swaps, tool-affordance swaps, and temporal-order reversals.
+- Method claim: a physical-invariance audit improves success, invalid-invariance rejection, false-invariance acceptance, contact violation, and unsafe action relative to the strongest non-oracle baseline.
+- Scope claim: results support mechanism plausibility in a local executable benchmark, not real-robot deployment.
+- Unsupported claim explicitly avoided: no claim of state-of-the-art robot policy evaluation or ICLR-main submission readiness.

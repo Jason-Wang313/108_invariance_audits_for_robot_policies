@@ -1,0 +1,9 @@
+case_id,task,regime,proposed_success,strongest_baseline,baseline_success,success_gap,proposed_invalid_rejection,proposed_false_acceptance,lesson
+1,mobile_pick_and_place,mirror_handed_contact,0.6327,conformal_shift_filter,0.6224,0.0102,0.6327,0.0935,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+2,drawer_opening,camera_viewpoint_shift,0.6973,conformal_shift_filter,0.6786,0.0187,0.6276,0.0544,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+3,peg_insertion,mirror_handed_contact,0.6293,conformal_shift_filter,0.6071,0.0221,0.6531,0.1003,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+4,mobile_pick_and_place,se2_pose_transform,0.7126,conformal_shift_filter,0.6854,0.0272,0.5867,0.0493,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+5,drawer_opening,lighting_background_shift,0.6956,conformal_shift_filter,0.6548,0.0408,0.5918,0.0425,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+6,mobile_pick_and_place,lighting_background_shift,0.6871,conformal_shift_filter,0.6412,0.0459,0.585,0.0238,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+7,tool_use,camera_viewpoint_shift,0.7007,conformal_shift_filter,0.6531,0.0476,0.585,0.0425,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform
+8,tool_use,lighting_background_shift,0.6854,conformal_shift_filter,0.6361,0.0493,0.6122,0.0459,the audit helps least when invariance is genuinely valid or when a conformal filter can cheaply reject the transform

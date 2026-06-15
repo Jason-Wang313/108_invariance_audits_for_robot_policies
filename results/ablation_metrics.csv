@@ -1,6 +1,8 @@
-ablation,combined_stress_mean_success,ci95_success,interpretation
-full_proposed_branch_mechanism,0.6621,0.0097,all components
-minus_branch_atlas,0.5586,0.0115,removes explicit unrealized futures
-minus_tail_risk_objective,0.5714,0.0101,uses mean predicted value only
-minus_diagnostic_probe,0.6150,0.0097,does not actively test ambiguous physical modes
-minus_failure_memory,0.6160,0.0094,does not reuse repaired beliefs
+ablation,mean_mean_success,ci95_mean_success,mean_mean_valid_invariance_retention,ci95_mean_valid_invariance_retention,mean_mean_invalid_invariance_rejection,ci95_mean_invalid_invariance_rejection,mean_mean_task_equivalence_f1,ci95_mean_task_equivalence_f1,mean_mean_false_invariance_acceptance,ci95_mean_false_invariance_acceptance,mean_mean_contact_violation,ci95_mean_contact_violation,mean_mean_unsafe_action,ci95_mean_unsafe_action,mean_mean_calibration_ece,ci95_mean_calibration_ece,mean_mean_intervention_cost,ci95_mean_intervention_cost,mean_mean_data_efficiency_proxy,ci95_mean_data_efficiency_proxy,groups,interpretation
+conformal_only,0.6056,0.0067,0.4503,0.0087,0.4863,0.0082,0.4025,0.0046,0.1203,0.0034,0.0571,0.0028,0.0519,0.0035,0.1057,0.0029,0.232,0.0065,0.4026,0.0069,7,conformal shift-filter baseline
+full_physical_invariance_audit,0.6843,0.0056,0.5847,0.0073,0.6172,0.0045,0.478,0.0078,0.0747,0.0022,0.0437,0.0022,0.0385,0.0022,0.0846,0.005,0.217,0.0064,0.4935,0.0067,7,all components
+minus_affordance_consistency_check,0.6489,0.0014,0.567,0.006,0.5204,0.012,0.4328,0.0069,0.1138,0.0063,0.0569,0.0037,0.056,0.004,0.0982,0.0046,0.2029,0.0056,0.4894,0.0049,7,misses tool and object affordance swaps
+minus_conservatism_calibration,0.6545,0.0057,0.5469,0.0098,0.5722,0.0076,0.4236,0.0058,0.1078,0.0024,0.065,0.0025,0.0675,0.0026,0.122,0.0057,0.1975,0.0049,0.4831,0.0078,7,over-accepts or over-rejects transformed states
+minus_contact_frame_test,0.6454,0.0045,0.563,0.0074,0.5147,0.0069,0.4256,0.0056,0.1168,0.0051,0.0737,0.0046,0.058,0.0031,0.103,0.005,0.2072,0.0078,0.4881,0.0134,7,accepts mirror-handed or contact-frame collapses
+minus_physical_validity_classifier,0.6211,0.0037,0.5576,0.0056,0.4455,0.0025,0.4128,0.0062,0.1379,0.0036,0.0621,0.0019,0.075,0.0037,0.1044,0.0047,0.2074,0.0052,0.4821,0.0045,7,cannot tell valid invariance from invalid invariance
+minus_temporal_order_check,0.6538,0.0052,0.5632,0.0064,0.5207,0.0063,0.4355,0.0079,0.1047,0.0023,0.0555,0.003,0.0604,0.0033,0.0989,0.004,0.2046,0.0065,0.4811,0.0048,7,collapses task order under temporal reversal

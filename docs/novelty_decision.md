@@ -1,7 +1,9 @@
 # Novelty Decision
 
-Chosen thesis: Invariance Audits for Robot Policies turns the seed bet into a mechanism: Audit which policy invariances are physically valid and which erase necessary distinctions.
+Chosen thesis: Invariance Audits for Robot Policies turns augmentation/equivariance into a physical-validity decision problem.
 
-New central mechanism: Invariance audits for robot policies keeps action-critical alternatives explicit until a physical observation collapses them.
+New central mechanism: classify transformations as action-preserving or action-changing before enforcing policy invariance.
 
-Decision: proceed as a revise/workshop-strength ICLR-style draft with synthetic but runnable evidence.
+Local result: the v4 benchmark clears the success, diagnostic, safety, pairwise, and ablation gates.
+
+Decision: STRONG_REVISE. The paper is worth continued development, but not ICLR-main ready until validated with real robot or independent high-fidelity evidence.
