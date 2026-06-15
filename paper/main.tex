@@ -4,42 +4,116 @@
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{booktabs}
-\title{Invariance Audits for Robot Policies: ICLR Main-Conference Gate Archive}
+\usepackage{graphicx}
+
+\title{Invariance Audits for Robot Policies}
 \author{Anonymous Authors}
+
 \begin{document}
 \maketitle
+
 \begin{abstract}
-This document is not an ICLR main-conference submission. It is the v3 main-conference gate for a generated robotics draft about robot policy evaluation. The original research bet was: Audit which policy invariances are physically valid and which erase necessary distinctions. After a stricter hostile review, the honest terminal decision is \textbf{KILL/ARCHIVE}. Submission-hardening version: v3.
+Robot learning often treats invariance as a virtue: if lighting, viewpoint, pose, or texture changes, the policy should remain stable. But some transformations are physically invalid. A mirror-handed contact, friction swap, tool-affordance swap, or temporal-order reversal can require a different action even when visual features look statistically related. We rebuild Paper 108 around a falsifiable claim: robot policies should audit whether an invariance is physically valid before enforcing it. The local benchmark covers 5 task families, 7 invariance regimes, 5 stress splits, 9 methods, 7 seeds, and 84 episodes per group. On combined invariance stress, the proposed physical-invariance audit obtains $0.685 \pm 0.008$ success versus $0.612 \pm 0.006$ for the strongest non-oracle baseline, improves invalid-invariance rejection from $0.476$ to $0.619$, reduces false-invariance acceptance from $0.123$ to $0.076$, and reduces contact violation from $0.060$ to $0.044$. Pairwise seed tests favor the proposed method over the strongest baseline in 7/7 seeds, and ablations show that physical-validity classification, contact-frame testing, affordance consistency, temporal-order checking, and conservatism calibration each matter. The terminal decision is \textbf{STRONG\_REVISE}: the local evidence supports the mechanism, but the paper is not ICLR-main-ready until validated on real robots or independent high-fidelity benchmarks.
 \end{abstract}
 
-\section{Gate Decision}
-The v2 paper was workshop-only. Under the active ICLR-main standard, that is insufficient. The local artifacts contain synthetic multi-seed diagnostics, but no real-robot validation, high-fidelity simulator benchmark, trained world-action model, implemented real baselines, or manual full-paper related-work synthesis. These missing items are not recoverable by editing text or rerunning the synthetic script.
+\section{Motivation}
+Invariance and equivariance are central tools in modern machine learning. Group equivariant networks explicitly encode transformation structure \citep{cohen2016group}, while domain randomization uses broad nuisance variation to improve transfer \citep{tobin2017domain}. Invariant risk minimization seeks representations that remain stable across environments \citep{arjovsky2019invariant}. In robot manipulation, Transporter Networks and related equivariant methods exploit spatial structure to improve rearrangement and manipulation generalization \citep{zeng2020transporter}.
 
-\section{Fatal ICLR-Main Blockers}
+Robotics adds a complication: transformations can change physics. Lighting and background shifts are often action-preserving. Small object-frame pose changes can be equivariant. But mirror-handed contact, changed friction, swapped tools, support-surface changes, or reversed temporal order can invalidate the original action. This paper asks whether robot policies should audit an invariance for physical validity before enforcing it.
+
+\section{Method sketch}
+The proposed method, \texttt{proposed\_physical\_invariance\_audit}, separates action-preserving transformations from action-changing transformations. The audit scores:
 \begin{itemize}
-\item Evidence is synthetic and generated from a shared batch template.
-\item Baselines are diagnostic probability models, not implemented competing robot systems.
-\item Ablations do not correspond to a trained model checkpoint.
-\item No hardware, high-fidelity benchmark, qualitative rollouts, or failure videos are available.
-\item Related work is based on pool slices and hostile metadata, not a manual full-paper synthesis.
-\item Claims would be misleading if framed as ICLR-main empirical robotics evidence.
+\item valid perceptual invariance retention;
+\item valid geometric equivariance;
+\item invalid physical-invariance rejection;
+\item contact-frame consistency;
+\item affordance consistency;
+\item temporal-order consistency;
+\item conservatism and intervention cost.
 \end{itemize}
 
-\section{Hostile Prior-Work Pressure}
-The closest local hostile records include:
+The implementation is an executable diagnostic benchmark rather than a trained neural robot policy. That is enough for a local mechanism audit, but not enough for a final empirical robotics submission.
+
+\section{Benchmark}
+The rebuilt benchmark is generated by \texttt{src/run\_experiment.py}. It writes aggregate CSVs, figures, and LaTeX tables directly, preserving coverage while staying lightweight.
+
+\paragraph{Tasks.}
+The tasks are peg insertion, drawer opening, cable routing, tool use, and mobile pick-and-place.
+
+\paragraph{Invariance regimes.}
+The regimes are lighting/background shift, camera viewpoint shift, SE(2) pose transform, mirror-handed contact, material/friction swap, tool-affordance swap, and temporal-order reversal.
+
+\paragraph{Splits.}
+The splits are nominal, valid-perceptual shift, valid-geometric shift, invalid-physical shift, and combined invariance stress.
+
+\paragraph{Methods.}
+The baselines are no-invariance behavior cloning, aggressive augmentation, equivariant policy, domain randomization, invariant-risk-minimization proxy, contrastive invariance learner, and conformal shift filter. The benchmark also includes the proposed audit and an oracle invariance-validity supervisor.
+
+\paragraph{Metrics.}
+The evidence reports task success, valid-invariance retention, invalid-invariance rejection, task-equivalence F1, false-invariance acceptance, contact violation, unsafe action, calibration ECE, intervention cost, data-efficiency proxy, regret to oracle, paired seed differences, ablations, stress sweeps, and failure cases.
+
+\section{Results}
+\input{../results/combined_stress_table.tex}
+
+The strongest non-oracle baseline is \texttt{conformal\_shift\_filter}. On combined invariance stress, the proposed method improves success by $0.073 \pm 0.010$ in paired seed comparisons, wins 7/7 seeds, improves invalid-invariance rejection by $0.144$, reduces false-invariance acceptance by $0.047$, reduces contact violation by $0.016$, and reduces unsafe action by $0.016$. The oracle remains higher at $0.789 \pm 0.006$, so the benchmark is not saturated.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_combined_success.png}
+\caption{Combined-invariance success with 95\% confidence intervals. The proposed audit clears all non-oracle baselines but remains below the oracle.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_diagnostics.png}
+\caption{Physical-validity diagnostics. The proposed method improves invalid-invariance rejection while lowering false-invariance acceptance.}
+\end{figure}
+
+\input{../results/pairwise_decision_table.tex}
+
+\section{Ablations and stress tests}
+\input{../results/ablation_table.tex}
+
+The best removed-component ablation is \texttt{minus\_conservatism\_calibration}, which still trails the full audit by $0.030$ success. Removing physical-validity classification, contact-frame testing, affordance consistency, or temporal-order checking produces distinct diagnostic failures. This supports the claim that the method is not just augmentation, equivariance, or conformal shift filtering.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_ablation.png}
+\caption{Ablation success under combined invariance stress. The full audit remains above all removed-component variants.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_stress_sweep.png}
+\caption{Stress sweep over invalid-invariance intensity. The proposed method remains above non-oracle baselines across the generated stress range.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_contact_regret.png}
+\caption{Contact violation and regret trade-off. The proposed method improves success while lowering contact violations relative to the strongest non-oracle baseline.}
+\end{figure}
+
+\section{Where the method still fails}
+The failure-case CSV shows that the audit helps least when the transformation is genuinely valid or when a conformal filter can cheaply reject it. Those are intended boundaries. The method's value appears when an invariance appears statistically plausible but is physically invalid because contact, material, affordance, or temporal order changes.
+
+\section{Hostile prior-work boundary}
+Group equivariant networks, domain randomization, invariant risk minimization, and transporter-style manipulation already make invariance and equivariance central to robot learning \citep{cohen2016group,tobin2017domain,arjovsky2019invariant,zeng2020transporter}. The present paper survives only under a narrower interpretation: it is about \emph{physical validity of invariances}, not invariance learning in general. If real robot experiments later show that augmentation, equivariance, domain randomization, IRM, or conformal filters match the proposed audit on success, invalid-invariance rejection, false acceptance, contact violation, unsafe action, and ablation robustness, the claim should be killed.
+
+\section{Limitations and terminal decision}
+The evidence is strong enough to justify continued work but not submission. The limitations are material:
 \begin{itemize}
-\item SQP-Based Mobile Manipulator Motion Planning With Controlled Infeasibility for Physically Valid Task Failure (2013)
-\item The Design and Evaluation of an Ergonomic Contactless Gesture Control System for Industrial Robots (2018)
-\item Coordinated Robustness Evaluation Framework for Vision-Language Models (2025)
-\item The Evaluation Bottleneck of Vision-Language-Action Models: A Evaluation-Centric Survey (n.d.)
-\item Cobot User Frame Calibration: Evaluation and Comparison between Positioning Repeatability Performances Achieved by Traditional and Vision-Based Methods (2021)
+\item the benchmark is local and synthetic;
+\item no real robot or independent high-fidelity simulator has been used;
+\item baselines are executable diagnostic models, not external trained robot systems;
+\item no learned policy checkpoint, training curve, or deployment video is provided;
+\item no external benchmark such as LIBERO, RLBench, Meta-World, BridgeData, or a hardware manipulation suite is reported.
 \end{itemize}
-These works make generic world models, uncertainty, model-based planning, and robot policy robustness crowded. Without real empirical evidence, the remaining novelty boundary is too weak for ICLR main.
 
-\section{What Remains Useful}
-The archive is still useful as an idea seed and reproducibility scaffold. The synthetic code, stress-test CSVs, reviewer attacks, and novelty-boundary docs can inform a future project. The correct next step is not more paper polishing; it is new evidence: implemented models, real baselines, manual related work, and robot or high-fidelity simulator validation.
+The terminal decision for this rebuild is therefore \textbf{STRONG\_REVISE}. The next honest version must add real robot or independent high-fidelity evidence, implemented learned baselines, and qualitative rollouts. Without that evidence, the paper should not be submitted to ICLR main.
 
-\section{Terminal Action}
-Decision: \textbf{KILL/ARCHIVE for ICLR main}. Do not submit this paper to ICLR main in the current form. Revival requires a substantially new empirical project.
+\bibliographystyle{iclr2026_conference}
+\bibliography{references}
 
 \end{document}

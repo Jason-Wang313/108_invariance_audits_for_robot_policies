@@ -1,26 +1,23 @@
-        # Hostile Reviewer Response
+# Hostile Reviewer Response
 
-        Paper: 108 Invariance Audits for Robot Policies
+Paper: 108 Invariance Audits for Robot Policies
 
-        ## Strongest Technical Threats
-        - SQP-Based Mobile Manipulator Motion Planning With Controlled Infeasibility for Physically Valid Task Failure (2013)
-- The Design and Evaluation of an Ergonomic Contactless Gesture Control System for Industrial Robots (2018)
-- Coordinated Robustness Evaluation Framework for Vision-Language Models (2025)
-- The Evaluation Bottleneck of Vision-Language-Action Models: A Evaluation-Centric Survey (n.d.)
-- Cobot User Frame Calibration: Evaluation and Comparison between Positioning Repeatability Performances Achieved by Traditional and Vision-Based Methods (2021)
-- Evaluation of Image Enhancement Techniques for Vision-Based Navigation under Low Illumination (2019)
-- The influence of tactile information on the human evaluation of tactile properties (2021)
-- OmniEEG-Bench: A Standardized Evaluation Benchmark for EEG Foundation Models (2026)
+## Strongest Technical Threats
 
-        ## ICLR Main Response
-        A hostile ICLR reviewer would be correct to reject this as a main-conference submission. The v2 paper has reproducible synthetic evidence and careful limitations, but it does not contain the real robot, high-fidelity simulator, learned model, or manual related-work depth needed for the ICLR main track.
+- Equivariant neural networks and equivariant robot policies already encode transformation structure.
+- Transporter-style manipulation already uses action-space equivariance for rearrangement.
+- Domain randomization and augmentation already make robot policies robust to nuisance variation.
+- Invariant risk minimization and contrastive invariance learning already seek stable representations.
+- Conformal and uncertainty filters already reject some distribution shifts.
 
-        ## Honest Action
-        The paper is marked `KILL_ARCHIVE`. This avoids converting a generated workshop-style idea into an overstated main-conference claim.
+## ICLR Main Response
 
-        ## What Would Be Needed To Revive
-        - Real robot or high-fidelity benchmark experiments.
-        - Implemented model and baselines, not synthetic probability tables.
-        - Manual full-paper related-work audit.
-        - Paper-specific writing and figures.
-        - Evidence that the core mechanism is learned and useful under deployment shift.
+The v4 rebuild narrows the claim to physical-validity auditing: deciding which invariances preserve the correct robot action and which erase contact frame, material, affordance, force-direction, or temporal-order distinctions. The local benchmark supports that boundary. Proposed combined-invariance success is `0.685 +/- 0.008` versus `0.612 +/- 0.006` for `conformal_shift_filter`; invalid-invariance rejection improves by `0.144`; false-invariance acceptance drops by `0.047`; contact violation and unsafe action both decrease; and the strongest-baseline paired comparison is 7/7 seeds in favor of the proposed method.
+
+## Remaining Hostile Review
+
+A hostile reviewer would still be right to reject a main-track submission today if it claimed deployment readiness. The evidence is local and synthetic; the baselines are diagnostic executable models rather than external robot systems; and there is no real robot or independently validated high-fidelity simulator result.
+
+## Honest Action
+
+The paper is marked `STRONG_REVISE`. Continue only if the next version adds real robot or high-fidelity external validation, implemented learned baselines, and qualitative rollouts.

@@ -1,16 +1,50 @@
-Submission-hardening experiment for paper 108 invariance_audits_for_robot_policies
-Seven seeds, 600 episodes per seed, strong baselines, ablations, stress sweep, and negative cases.
-observed_only_behavior_clone hidden_mode_shift mean_success=0.3990 ci95=0.0131 tail=0.6010
-observed_only_behavior_clone combined_stress mean_success=0.3102 ci95=0.0067 tail=0.6898
-data_augmentation_wam hidden_mode_shift mean_success=0.4879 ci95=0.0116 tail=0.5121
-data_augmentation_wam combined_stress mean_success=0.4150 ci95=0.0196 tail=0.5850
-scalar_uncertainty_planner hidden_mode_shift mean_success=0.5486 ci95=0.0165 tail=0.4514
-scalar_uncertainty_planner combined_stress mean_success=0.4909 ci95=0.0140 tail=0.5091
-ensemble_disagreement_planner hidden_mode_shift mean_success=0.5843 ci95=0.0177 tail=0.4157
-ensemble_disagreement_planner combined_stress mean_success=0.5343 ci95=0.0150 tail=0.4657
-conformal_risk_filter hidden_mode_shift mean_success=0.6050 ci95=0.0178 tail=0.3950
-conformal_risk_filter combined_stress mean_success=0.5600 ci95=0.0164 tail=0.4400
-proposed_branch_mechanism hidden_mode_shift mean_success=0.6943 ci95=0.0062 tail=0.3057
-proposed_branch_mechanism combined_stress mean_success=0.6490 ci95=0.0140 tail=0.3510
-oracle_branch_upper_bound hidden_mode_shift mean_success=0.7683 ci95=0.0076 tail=0.2317
-oracle_branch_upper_bound combined_stress mean_success=0.7443 ci95=0.0118 tail=0.2557
+Paper 108 invariance_audits_for_robot_policies evidence rebuild
+Design: 5 tasks x 7 invariance regimes x 5 splits x 9 methods, 7 seeds, 84 episodes/group.
+Terminal decision: STRONG_REVISE
+Rationale: local physical-invariance audit evidence supports the mechanism, but real robot/external validation is missing
+
+Combined-invariance ranking:
+oracle_invariance_validity_supervisor: success=0.789 +/- 0.006, valid_retention=0.696, invalid_rejection=0.724, false_accept=0.037, contact_violation=0.019, unsafe=0.009, ece=0.061, cost=0.226, regret=0.000
+proposed_physical_invariance_audit: success=0.685 +/- 0.008, valid_retention=0.588, invalid_rejection=0.619, false_accept=0.076, contact_violation=0.044, unsafe=0.039, ece=0.080, cost=0.220, regret=0.104
+conformal_shift_filter: success=0.612 +/- 0.006, valid_retention=0.454, invalid_rejection=0.476, false_accept=0.123, contact_violation=0.060, unsafe=0.055, ece=0.100, cost=0.238, regret=0.177
+contrastive_invariance_learner: success=0.587 +/- 0.009, valid_retention=0.545, invalid_rejection=0.339, false_accept=0.172, contact_violation=0.088, unsafe=0.098, ece=0.129, cost=0.189, regret=0.202
+invariant_risk_minimization_proxy: success=0.583 +/- 0.009, valid_retention=0.481, invalid_rejection=0.386, false_accept=0.159, contact_violation=0.080, unsafe=0.089, ece=0.119, cost=0.190, regret=0.206
+domain_randomization: success=0.575 +/- 0.005, valid_retention=0.516, invalid_rejection=0.348, false_accept=0.171, contact_violation=0.087, unsafe=0.098, ece=0.133, cost=0.189, regret=0.214
+equivariant_policy: success=0.563 +/- 0.008, valid_retention=0.506, invalid_rejection=0.300, false_accept=0.188, contact_violation=0.095, unsafe=0.109, ece=0.143, cost=0.179, regret=0.226
+aggressive_augmentation_policy: success=0.554 +/- 0.008, valid_retention=0.541, invalid_rejection=0.233, false_accept=0.211, contact_violation=0.111, unsafe=0.125, ece=0.154, cost=0.176, regret=0.235
+no_invariance_behavior_clone: success=0.529 +/- 0.007, valid_retention=0.253, invalid_rejection=0.433, false_accept=0.147, contact_violation=0.087, unsafe=0.081, ece=0.130, cost=0.181, regret=0.260
+
+Gate outcomes:
+success_gate: True
+diagnostic_gate: True
+safety_gate: True
+pairwise_gate: True
+ablation_gate: True
+success_margin_vs_strongest: 0.07274052478134119
+invalid_rejection_delta_vs_strongest: 0.14353741496598638
+false_invariance_acceptance_delta_vs_strongest: -0.047376093294460644
+contact_violation_delta_vs_strongest: -0.016132167152575323
+unsafe_action_delta_vs_strongest: -0.01618075801749272
+intervention_cost_delta_vs_strongest: -0.01865889212827987
+ablation_margin_vs_best_removed_component: 0.02978620019436351
+strongest_non_oracle_baseline: conformal_shift_filter
+best_removed_component: minus_conservatism_calibration
+
+Pairwise proposed comparisons:
+aggressive_augmentation_policy: diff=0.130 +/- 0.008, wins=7/7, decision=proposed_better
+conformal_shift_filter: diff=0.073 +/- 0.010, wins=7/7, decision=proposed_better
+contrastive_invariance_learner: diff=0.098 +/- 0.009, wins=7/7, decision=proposed_better
+domain_randomization: diff=0.109 +/- 0.010, wins=7/7, decision=proposed_better
+equivariant_policy: diff=0.122 +/- 0.007, wins=7/7, decision=proposed_better
+invariant_risk_minimization_proxy: diff=0.102 +/- 0.009, wins=7/7, decision=proposed_better
+no_invariance_behavior_clone: diff=0.156 +/- 0.011, wins=7/7, decision=proposed_better
+oracle_invariance_validity_supervisor: diff=-0.104 +/- 0.013, wins=0/7, decision=not_decisive
+
+Ablations:
+full_physical_invariance_audit: success=0.684 +/- 0.006, invalid_rejection=0.617, false_accept=0.075, contact_violation=0.044, note=all components
+minus_conservatism_calibration: success=0.654 +/- 0.006, invalid_rejection=0.572, false_accept=0.108, contact_violation=0.065, note=over-accepts or over-rejects transformed states
+minus_temporal_order_check: success=0.654 +/- 0.005, invalid_rejection=0.521, false_accept=0.105, contact_violation=0.056, note=collapses task order under temporal reversal
+minus_affordance_consistency_check: success=0.649 +/- 0.001, invalid_rejection=0.520, false_accept=0.114, contact_violation=0.057, note=misses tool and object affordance swaps
+minus_contact_frame_test: success=0.645 +/- 0.004, invalid_rejection=0.515, false_accept=0.117, contact_violation=0.074, note=accepts mirror-handed or contact-frame collapses
+minus_physical_validity_classifier: success=0.621 +/- 0.004, invalid_rejection=0.445, false_accept=0.138, contact_violation=0.062, note=cannot tell valid invariance from invalid invariance
+conformal_only: success=0.606 +/- 0.007, invalid_rejection=0.486, false_accept=0.120, contact_violation=0.057, note=conformal shift-filter baseline
