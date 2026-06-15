@@ -5,6 +5,9 @@
 \usepackage{url}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{microtype}
+
+\raggedbottom
 
 \title{Invariance Audits for Robot Policies}
 \author{Anonymous Authors}
@@ -13,7 +16,7 @@
 \maketitle
 
 \begin{abstract}
-Robot learning often treats invariance as a virtue: if lighting, viewpoint, pose, or texture changes, the policy should remain stable. But some transformations are physically invalid. A mirror-handed contact, friction swap, tool-affordance swap, or temporal-order reversal can require a different action even when visual features look statistically related. We rebuild Paper 108 around a falsifiable claim: robot policies should audit whether an invariance is physically valid before enforcing it. The local benchmark covers 5 task families, 7 invariance regimes, 5 stress splits, 9 methods, 7 seeds, and 84 episodes per group. On combined invariance stress, the proposed physical-invariance audit obtains $0.685 \pm 0.008$ success versus $0.612 \pm 0.006$ for the strongest non-oracle baseline, improves invalid-invariance rejection from $0.476$ to $0.619$, reduces false-invariance acceptance from $0.123$ to $0.076$, and reduces contact violation from $0.060$ to $0.044$. Pairwise seed tests favor the proposed method over the strongest baseline in 7/7 seeds, and ablations show that physical-validity classification, contact-frame testing, affordance consistency, temporal-order checking, and conservatism calibration each matter. The terminal decision is \textbf{STRONG\_REVISE}: the local evidence supports the mechanism, but the paper is not ICLR-main-ready until validated on real robots or independent high-fidelity benchmarks.
+Robot learning often treats invariance as a virtue: if lighting, viewpoint, pose, or texture changes, the policy should remain stable. But some transformations are physically invalid. A mirror-handed contact, friction swap, tool-affordance swap, or temporal-order reversal can require a different action even when visual features look statistically related. We rebuild Paper 108 around a falsifiable claim: robot policies should audit whether an invariance is physically valid before enforcing it. The local benchmark covers 5 task families, 7 invariance regimes, 5 stress splits, 9 methods, 7 seeds, and 84 episodes per group. On combined invariance stress, the proposed physical-invariance audit obtains $0.685 \pm 0.008$ success versus $0.612 \pm 0.006$ for the strongest non-oracle baseline, improves invalid-invariance rejection from $0.476$ to $0.619$, reduces false-invariance acceptance from $0.123$ to $0.076$, and reduces contact violation from $0.060$ to $0.044$. Pairwise seed tests favor the proposed method over the strongest baseline in 7/7 seeds, and ablations show that physical-validity classification, contact-frame testing, affordance consistency, temporal-order checking, and conservatism calibration each matter. A 2026-06-15 continuation audit reran the full benchmark and preserved the terminal decision: \textbf{STRONG\_REVISE}. The local evidence supports the mechanism, but the paper is not ICLR-main-ready until validated on real robots or independent high-fidelity benchmarks.
 \end{abstract}
 
 \section{Motivation}
@@ -57,6 +60,8 @@ The evidence reports task success, valid-invariance retention, invalid-invarianc
 \input{../results/combined_stress_table.tex}
 
 The strongest non-oracle baseline is \texttt{conformal\_shift\_filter}. On combined invariance stress, the proposed method improves success by $0.073 \pm 0.010$ in paired seed comparisons, wins 7/7 seeds, improves invalid-invariance rejection by $0.144$, reduces false-invariance acceptance by $0.047$, reduces contact violation by $0.016$, and reduces unsafe action by $0.016$. The oracle remains higher at $0.789 \pm 0.006$, so the benchmark is not saturated.
+
+At maximum stress level $0.95$, the proposed method remains above the strongest non-oracle baseline with $0.679 \pm 0.007$ success versus $0.594 \pm 0.007$, higher valid-invariance retention ($0.579$ versus $0.444$), higher invalid-invariance rejection ($0.619$ versus $0.479$), lower false-invariance acceptance ($0.078$ versus $0.123$), lower contact violation ($0.043$ versus $0.057$), and lower unsafe action ($0.039$ versus $0.054$). This is still local evidence rather than external validation.
 
 \begin{figure}[t]
 \centering
@@ -113,7 +118,10 @@ The evidence is strong enough to justify continued work but not submission. The 
 
 The terminal decision for this rebuild is therefore \textbf{STRONG\_REVISE}. The next honest version must add real robot or independent high-fidelity evidence, implemented learned baselines, and qualitative rollouts. Without that evidence, the paper should not be submitted to ICLR main.
 
+\begingroup
+\raggedright
 \bibliographystyle{iclr2026_conference}
 \bibliography{references}
+\endgroup
 
 \end{document}

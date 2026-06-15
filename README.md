@@ -1,12 +1,14 @@
 # 108 Invariance Audits for Robot Policies
 
-Submission-hardening version: v4
+Submission-hardening version: v4.1
 
 Terminal decision: STRONG_REVISE for an ICLR-main-target paper, not ready-to-submit.
 
-This rebuild replaces the v3 archive with a paper-specific physical-invariance audit benchmark. The central claim is narrow: robot-policy invariances must be audited for physical validity, because lighting or viewpoint changes can preserve the correct action while mirror-handed contact, friction swaps, tool-affordance swaps, or temporal-order reversals can erase necessary distinctions.
+This rebuild replaces the v3 archive with a paper-specific physical-invariance audit benchmark. The 2026-06-15 continuation audit reran the full benchmark from source and preserved the terminal decision. The central claim is narrow: robot-policy invariances must be audited for physical validity, because lighting or viewpoint changes can preserve the correct action while mirror-handed contact, friction swaps, tool-affordance swaps, or temporal-order reversals can erase necessary distinctions.
 
-The local evidence supports the mechanism. On combined invariance stress, `proposed_physical_invariance_audit` reaches `0.685 +/- 0.008` success versus `0.612 +/- 0.006` for the strongest non-oracle baseline, `conformal_shift_filter`. Invalid-invariance rejection improves from `0.476` to `0.619`; false-invariance acceptance falls from `0.123` to `0.076`; contact violation falls from `0.060` to `0.044`; and paired seed comparisons favor the proposed method in 7/7 seeds.
+The local evidence supports the mechanism. On combined invariance stress, `proposed_physical_invariance_audit` reaches `0.685 +/- 0.008` success versus `0.612 +/- 0.006` for the strongest non-oracle baseline, `conformal_shift_filter`. Invalid-invariance rejection improves from `0.476` to `0.619`; false-invariance acceptance falls from `0.123` to `0.076`; contact violation falls from `0.060` to `0.044`; unsafe action falls from `0.056` to `0.039`; intervention cost falls from `0.238` to `0.220`; and paired seed comparisons favor the proposed method in 7/7 seeds.
+
+At maximum stress level `0.95`, proposed success is `0.679 +/- 0.007` versus `0.594 +/- 0.007` for conformal shift filtering, with higher valid-invariance retention and invalid-invariance rejection plus lower false acceptance, contact violation, and unsafe action.
 
 The honest limitation is still material: this is a local executable diagnostic benchmark, not real robot or independently validated high-fidelity simulator evidence. The paper should be revised with external robot validation before main-track submission.
 
