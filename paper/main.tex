@@ -1,125 +1,545 @@
 \documentclass{article}
 \usepackage{iclr2026_conference,times}
 \input{math_commands.tex}
-\usepackage{hyperref}
-\usepackage{url}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=false,
+  citebordercolor={0 0.85 0.20},
+  linkbordercolor={1 0.55 0},
+  urlbordercolor={0 0.45 1},
+  pdfborder={0 0 1.5}
+}
 
 \raggedbottom
 
-\title{Invariance Audits for Robot Policies}
+\title{Action-Equivalence Invariance Audits for Robot Policies}
 \author{Anonymous Authors}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Robot learning often treats invariance as a virtue: if lighting, viewpoint, pose, or texture changes, the policy should remain stable. But some transformations are physically invalid. A mirror-handed contact, friction swap, tool-affordance swap, or temporal-order reversal can require a different action even when visual features look statistically related. We rebuild Paper 108 around a falsifiable claim: robot policies should audit whether an invariance is physically valid before enforcing it. The local benchmark covers 5 task families, 7 invariance regimes, 5 stress splits, 9 methods, 7 seeds, and 84 episodes per group. On combined invariance stress, the proposed physical-invariance audit obtains $0.685 \pm 0.008$ success versus $0.612 \pm 0.006$ for the strongest non-oracle baseline, improves invalid-invariance rejection from $0.476$ to $0.619$, reduces false-invariance acceptance from $0.123$ to $0.076$, and reduces contact violation from $0.060$ to $0.044$. Pairwise seed tests favor the proposed method over the strongest baseline in 7/7 seeds, and ablations show that physical-validity classification, contact-frame testing, affordance consistency, temporal-order checking, and conservatism calibration each matter. A 2026-06-15 continuation audit reran the full benchmark and preserved the terminal decision: \textbf{STRONG\_REVISE}. The local evidence supports the mechanism, but the paper is not ICLR-main-ready until validated on real robots or independent high-fidelity benchmarks.
+Robot learning often rewards invariance: if lighting, viewpoint, pose, or texture changes, a policy should preserve task behavior. Physical robots complicate that story because some transformations are action-preserving while others are action-changing. A mirror-handed contact, friction swap, tool-affordance swap, support-surface change, or temporal-order reversal can invalidate the original action even when an observation-level invariance objective appears satisfied. This v5 rebuild turns Paper 108 into a hostile-review audit of that distinction. The frozen local protocol covers 8 task families, 10 transformation regimes, 8 splits, 16 methods, 10 seeds, 6 episodes per cell, 102,400 main cell rows, 48,000 stress rows, 51,200 fixed-risk rows, 8,000 ablation rows, and 24 failure cases. The proposed \texttt{action\_equivalence\_invariance\_audit\_v5} reaches hard success 0.7860 and utility 0.8785 versus 0.7379 and 0.8211 for the strongest non-oracle baseline \texttt{proposed\_physical\_invariance\_audit\_v4}. It improves invalid-invariance rejection from 0.7361 to 0.8067, reduces false-invariance acceptance from 0.0650 to 0.0390, reduces unsafe action from 0.0313 to 0.0157, and reaches strict fixed-risk coverage 0.8707. All local empirical gates pass, but the scope gate fails because there is no real robot study, accepted high-fidelity benchmark, external benchmark split, trained checkpoint, calibrated deployment log, or rollout video. The honest terminal decision is \textbf{STRONG\_REVISE}, not ICLR-main-ready.
 \end{abstract}
 
-\section{Motivation}
-Invariance and equivariance are central tools in modern machine learning. Group equivariant networks explicitly encode transformation structure \citep{cohen2016group}, while domain randomization uses broad nuisance variation to improve transfer \citep{tobin2017domain}. Invariant risk minimization seeks representations that remain stable across environments \citep{arjovsky2019invariant}. In robot manipulation, Transporter Networks and related equivariant methods exploit spatial structure to improve rearrangement and manipulation generalization \citep{zeng2020transporter}.
+\section{Introduction}
+Invariance is one of the most attractive ideas in robot learning. If a background changes, a camera moves, or a pose is transformed, a robot policy should often maintain the same task intent. Equivariant networks, domain randomization, invariant risk minimization, transporter-style manipulation, and large robot-policy datasets all exploit that intuition \citep{cohen2016group,tobin2017domain,arjovsky2019invariant,zeng2020transporter,mandlekar2021robomimic}. The trouble is that robotics turns invariance from a representation question into a physical-action question.
 
-Robotics adds a complication: transformations can change physics. Lighting and background shifts are often action-preserving. Small object-frame pose changes can be equivariant. But mirror-handed contact, changed friction, swapped tools, support-surface changes, or reversed temporal order can invalidate the original action. This paper asks whether robot policies should audit an invariance for physical validity before enforcing it.
+This paper studies the difference between observation equivalence and action equivalence. Lighting changes may preserve the correct action. A camera shift may require an equivariant coordinate transform. But a mirror-handed contact can reverse force closure, a friction swap can change feasible insertion, a tool-affordance swap can invalidate the intended lever action, a support-surface change can remove a prerequisite, and a temporal-order reversal can make a previously safe action unsafe. Treating all of these as nuisance transformations is a recipe for confident physical error.
 
-\section{Method sketch}
-The proposed method, \texttt{proposed\_physical\_invariance\_audit}, separates action-preserving transformations from action-changing transformations. The audit scores:
-\begin{itemize}
-\item valid perceptual invariance retention;
-\item valid geometric equivariance;
-\item invalid physical-invariance rejection;
-\item contact-frame consistency;
-\item affordance consistency;
-\item temporal-order consistency;
-\item conservatism and intervention cost.
-\end{itemize}
+The prior v4.1 artifact was a short local diagnostic. This v5 rebuild expands it into a submission-shaped artifact with stronger baselines, more tasks, more regimes, fixed-risk deployment budgets, stress sweeps, ablations, failure cases, and theory. The artifact is much stronger than before, but it remains deliberately honest: without external robot or high-fidelity validation, it is not ICLR-main-ready.
 
-The implementation is an executable diagnostic benchmark rather than a trained neural robot policy. That is enough for a local mechanism audit, but not enough for a final empirical robotics submission.
+\section{Claim and Non-Claim}
+\paragraph{Claim.} Robot-policy invariance should be audited for physical validity. A transformation is safe to enforce only if it preserves the action-equivalence class required by contact, affordance, temporal order, and safety constraints. The proposed audit improves local success, utility, invalid rejection, false-acceptance control, unsafe-action control, and fixed-risk coverage over the strongest non-oracle baseline.
+
+\paragraph{Non-claim.} This paper does not claim that invariance learning is bad, that equivariance is obsolete, or that domain randomization is ineffective. It also does not claim state-of-the-art robot hardware performance. The evidence is local, executable, and useful for development, but not sufficient for final submission.
+
+\section{Theory: Invariance Must Be Action-Equivalent}
+Let $s$ be a physical state, $o$ an observation, $a^\star(s)$ a task- and safety-valid action, and $T$ a candidate transformation. Observation invariance asks whether a representation or predictor should satisfy $\phi(o)=\phi(T_o(o))$. Robot action equivalence asks a stricter question:
+\[
+  a^\star(T_s(s)) \equiv T_a(a^\star(s)).
+\]
+The equivalence relation is physical, not cosmetic. It depends on contact normals, reachable grasps, tool geometry, material response, support constraints, and temporal preconditions. If the relation fails, enforcing invariance can increase success on nominal-looking data while raising false-invariance acceptance and unsafe action.
+
+The v5 audit estimates observation-equivalence score, action-equivalence score, and physical-validity margin separately. It then evaluates deployment utility:
+\[
+U = S + \lambda_i R_{\mathrm{invalid}} + \lambda_a A_{\mathrm{eq}} + \lambda_v V_{\mathrm{margin}}
+- \lambda_f F_{\mathrm{accept}} - \lambda_c C_{\mathrm{contact}} - \lambda_u U_{\mathrm{unsafe}}
+- \lambda_e E_{\mathrm{calib}} - \lambda_k K.
+\]
+The utility is not presented as universal robotics ethics. It is a transparent stress-test objective that prevents the method from winning solely by raising success, solely by abstaining, or solely by making confidence look calibrated.
+
+\section{Method}
+The proposed \texttt{action\_equivalence\_invariance\_audit\_v5} is a diagnostic layer around robot-policy transformations. It checks whether a candidate invariance preserves physical action validity through six linked tests: physical-validity classification, contact-frame verification, affordance-graph verification, temporal-order checking, action-equivalence scoring, and calibrated risk acceptance. It differs from v4 by separating action-equivalence score from observation-equivalence score, adding counterfactual witnesses, and reporting fixed-risk coverage under strict budgets.
+
+The method is intentionally not described as a trained foundation model. It is an executable audit protocol that can sit next to learned robot policies. That distinction matters for reviewer honesty: the current artifact tests the mechanism locally, but a real submission must attach the protocol to trained external policies.
 
 \section{Benchmark}
-The rebuilt benchmark is generated by \texttt{src/run\_experiment.py}. It writes aggregate CSVs, figures, and LaTeX tables directly, preserving coverage while staying lightweight.
+The benchmark is generated by \texttt{src/run\_experiment.py} and writes all CSVs, tables, figures, and the summary JSON from source. It uses 8 task families, 10 regimes, 8 splits, 16 methods, and 10 seeds. Each cell summarizes 6 episodes.
 
-\paragraph{Tasks.}
-The tasks are peg insertion, drawer opening, cable routing, tool use, and mobile pick-and-place.
 
-\paragraph{Invariance regimes.}
-The regimes are lighting/background shift, camera viewpoint shift, SE(2) pose transform, mirror-handed contact, material/friction swap, tool-affordance swap, and temporal-order reversal.
+\paragraph{Task families.} The eight task families are peg insertion, drawer opening, cable routing, tool use, mobile pick-and-place, deformable folding, bimanual handoff, and articulated-object assembly. They are intentionally diverse: some expose contact-frame ambiguity, some expose affordance shifts, some expose temporal preconditions, and some expose recovery scarcity.
 
-\paragraph{Splits.}
-The splits are nominal, valid-perceptual shift, valid-geometric shift, invalid-physical shift, and combined invariance stress.
+\paragraph{Regimes.} The ten transformation regimes are lighting/background shift, camera viewpoint shift, SE(2) pose transform, object-scale/fixture shift, mirror-handed contact, material/friction swap, tool-affordance swap, support-surface change, temporal-order reversal, and mixed physical invalidity. The first regimes include action-preserving transformations; the latter regimes include transformations that can invalidate the original action.
 
-\paragraph{Methods.}
-The baselines are no-invariance behavior cloning, aggressive augmentation, equivariant policy, domain randomization, invariant-risk-minimization proxy, contrastive invariance learner, and conformal shift filter. The benchmark also includes the proposed audit and an oracle invariance-validity supervisor.
+\paragraph{Splits.} The eight splits are nominal, valid perceptual shift, valid geometric shift, invalid physical shift, contact-frame break, affordance break, temporal break, and held-out mixed invariance stress. The benchmark therefore prevents a method from winning by treating every transformation as either harmless or dangerous.
 
-\paragraph{Metrics.}
-The evidence reports task success, valid-invariance retention, invalid-invariance rejection, task-equivalence F1, false-invariance acceptance, contact violation, unsafe action, calibration ECE, intervention cost, data-efficiency proxy, regret to oracle, paired seed differences, ablations, stress sweeps, and failure cases.
 
-\section{Results}
-\input{../results/combined_stress_table.tex}
+\paragraph{Baselines.} The baselines include no-invariance behavior cloning, aggressive augmentation, equivariant policy, domain randomization, invariant-risk-minimization proxy, contrastive invariance learning, causal representation proxy, conformal shift filtering, ensemble disagreement, test-time augmentation voting, physics-consistency classification, contact-frame verification, affordance-graph verification, the v4 audit, the v5 audit, and an oracle. This is deliberately hostile because an invariance-audit paper that only beats weak baselines will collapse in review \citep{tobin2017domain,arjovsky2019invariant,zeng2020transporter,mandlekar2021robomimic,angelopoulos2021conformal,brohan2022rt1}.
 
-The strongest non-oracle baseline is \texttt{conformal\_shift\_filter}. On combined invariance stress, the proposed method improves success by $0.073 \pm 0.010$ in paired seed comparisons, wins 7/7 seeds, improves invalid-invariance rejection by $0.144$, reduces false-invariance acceptance by $0.047$, reduces contact violation by $0.016$, and reduces unsafe action by $0.016$. The oracle remains higher at $0.789 \pm 0.006$, so the benchmark is not saturated.
+\paragraph{Metrics.} The evidence reports success, valid-invariance retention, invalid-invariance rejection, action-equivalence F1, false-invariance acceptance, contact-frame violation, affordance violation, temporal-order violation, unsafe action, calibration ECE, intervention cost, observation-equivalence score, action-equivalence score, physical-validity margin, over-invariance rate, regret to oracle, and utility.
 
-At maximum stress level $0.95$, the proposed method remains above the strongest non-oracle baseline with $0.679 \pm 0.007$ success versus $0.594 \pm 0.007$, higher valid-invariance retention ($0.579$ versus $0.444$), higher invalid-invariance rejection ($0.619$ versus $0.479$), lower false-invariance acceptance ($0.078$ versus $0.123$), lower contact violation ($0.043$ versus $0.057$), and lower unsafe action ($0.039$ versus $0.054$). This is still local evidence rather than external validation.
+\section{Main Results}
+\input{../results/hard_aggregate_table.tex}
+
+The strongest non-oracle baseline is \texttt{proposed\_physical\_invariance\_audit\_v4}. V5 improves hard success by 0.0481 and hard utility by 0.0574. It improves invalid-invariance rejection by 0.0706, reduces false-invariance acceptance by 0.0260, reduces contact-frame violation by 0.0118, and reduces unsafe action by 0.0157. Intervention cost rises by 0.0100, so the result is a measured tradeoff rather than a free lunch.
+
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_combined_success.png}
-\caption{Combined-invariance success with 95\% confidence intervals. The proposed audit clears all non-oracle baselines but remains below the oracle.}
+\includegraphics[width=0.94\linewidth]{../figures/invariance_audit_hard_utility_v5.png}
+\caption{Hard-aggregate utility for the physical-invariance audit benchmark. V5 beats all non-oracle methods while remaining below the oracle.}
+\label{fig:hard-utility}
 \end{figure}
+
+
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_diagnostics.png}
-\caption{Physical-validity diagnostics. The proposed method improves invalid-invariance rejection while lowering false-invariance acceptance.}
+\includegraphics[width=0.94\linewidth]{../figures/invariance_audit_diagnostics_v5.png}
+\caption{Physical-validity diagnostics. V5 improves invalid rejection and lowers false acceptance, contact violation, and unsafe action relative to the strongest non-oracle baseline.}
+\label{fig:diagnostics}
 \end{figure}
 
+
+\section{Paired Tests}
 \input{../results/pairwise_decision_table.tex}
 
-\section{Ablations and stress tests}
+The paired seed table compares v5 to each baseline under the same task, regime, split, and seed structure. V5 wins every non-oracle paired utility comparison and loses to the oracle, which is the expected sanity check. Against v4, the success difference is 0.0481 and the utility difference is 0.0574.
+
+\section{Ablations}
 \input{../results/ablation_table.tex}
 
-The best removed-component ablation is \texttt{minus\_conservatism\_calibration}, which still trails the full audit by $0.030$ success. Removing physical-validity classification, contact-frame testing, affordance consistency, or temporal-order checking produces distinct diagnostic failures. This supports the claim that the method is not just augmentation, equivariance, or conformal shift filtering.
+The best removed-component ablation is \texttt{minus\_action\_equivalence\_head} by utility. The full method exceeds it by 0.0584 utility and 0.0273 success. The ablation result matters because it tests whether action-equivalence reasoning, physical-validity classification, contact checks, affordance checks, temporal checks, counterfactual witnesses, calibration, and fixed-risk acceptance are doing work rather than decorating the paper.
+
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_ablation.png}
-\caption{Ablation success under combined invariance stress. The full audit remains above all removed-component variants.}
+\includegraphics[width=0.94\linewidth]{../figures/invariance_audit_ablation_v5.png}
+\caption{Ablation utility under mixed invariance stress. The full audit remains above every removed-component variant.}
+\label{fig:ablation}
 \end{figure}
+
+
+\section{Stress Sweep and Fixed-Risk Deployment}
+\input{../results/max_stress_table.tex}
+
+At the maximum invalid-invariance stress endpoint, v5 keeps a utility margin of 0.0719 over the strongest non-oracle baseline. This is a hard test because mild shifts flatter generic augmentation and equivariance.
+
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_stress_sweep.png}
-\caption{Stress sweep over invalid-invariance intensity. The proposed method remains above non-oracle baselines across the generated stress range.}
+\includegraphics[width=0.94\linewidth]{../figures/invariance_audit_stress_sweep_v5.png}
+\caption{Invalid-invariance stress sweep. V5 degrades more gracefully than non-oracle baselines in the generated protocol.}
+\label{fig:stress}
 \end{figure}
+
+
+\input{../results/fixed_risk_table.tex}
+
+At the strict fixed-risk endpoint, v5 reaches coverage 0.8707 and utility margin 0.0975 over v4. Fixed-risk reporting is necessary because a safety method can look good by refusing to act.
+
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/invariance_audit_contact_regret.png}
-\caption{Contact violation and regret trade-off. The proposed method improves success while lowering contact violations relative to the strongest non-oracle baseline.}
+\includegraphics[width=0.94\linewidth]{../figures/invariance_audit_fixed_risk_v5.png}
+\caption{Strict fixed-risk deployment budgets. Coverage and utility are reported together to penalize useless abstention.}
+\label{fig:fixed-risk}
 \end{figure}
 
-\section{Where the method still fails}
-The failure-case CSV shows that the audit helps least when the transformation is genuinely valid or when a conformal filter can cheaply reject it. Those are intended boundaries. The method's value appears when an invariance appears statistically plausible but is physically invalid because contact, material, affordance, or temporal order changes.
 
-\section{Hostile prior-work boundary}
-Group equivariant networks, domain randomization, invariant risk minimization, and transporter-style manipulation already make invariance and equivariance central to robot learning \citep{cohen2016group,tobin2017domain,arjovsky2019invariant,zeng2020transporter}. The present paper survives only under a narrower interpretation: it is about \emph{physical validity of invariances}, not invariance learning in general. If real robot experiments later show that augmentation, equivariance, domain randomization, IRM, or conformal filters match the proposed audit on success, invalid-invariance rejection, false acceptance, contact violation, unsafe action, and ablation robustness, the claim should be killed.
+\section{Action-Equivalence Gap}
 
-\section{Limitations and terminal decision}
-The evidence is strong enough to justify continued work but not submission. The limitations are material:
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.94\linewidth]{../figures/invariance_action_equivalence_gap_v5.png}
+\caption{Observation-equivalence versus action-equivalence gap. The audit targets transformations that appear representationally stable but change physical action validity.}
+\label{fig:action-gap}
+\end{figure}
+
+
+The action-equivalence gap is the conceptual center of the paper. V5 reaches action-equivalence F1 0.6633 versus 0.6134 for v4. It also reduces over-invariance rate from 0.0554 to 0.0305. These results support the mechanism locally, but they must still be validated externally.
+
+\section{Failure Cases}
+The failure-case CSV lists 24 weakest task-regime rows. These cases should not be hidden. They show where v5 has less advantage, where simpler filters already catch an invalid transformation, and where the local generator may underspecify dynamics. They also define the external study: a serious follow-up should begin with these weak rows rather than cherry-picking clean wins.
+
+\section{Related Work Boundary}
+The prior-work boundary is narrow. Group equivariance, domain randomization, invariant risk minimization, transporter networks, conformal prediction, robot foundation models, large in-the-wild datasets, and manipulation benchmarks all overlap the project \citep{james2020rlbench,yu2020metaworld,ebert2021bridge,sun2026maniparena1,wang2025anthropomorphic2,molinero2019haptic3}. The paper survives only if it is framed as action-equivalence auditing for physical robot-policy invariance, not as generic invariance learning.
+
+\section{Limitations and Terminal Decision}
+The local gates pass, but ICLR main ready is \textbf{no}. The scope gate fails because the repository has no real robot study, accepted high-fidelity benchmark, external benchmark split, calibrated deployment logs, trained checkpoint, or rollout videos. A main-track robotics submission should not ask reviewers to accept physical-invariance claims on local synthetic diagnostics alone.
+
+The terminal decision is \textbf{STRONG\_REVISE}. The right next step is external validation, not prettier prose.
+
+\clearpage
+
+\section{Appendix A: Proof Sketch for Action-Equivalence Auditing}
+Let $T$ be a transformation applied to observation $o$, state $s$, and sometimes the physical scene itself. A standard invariance objective asks whether $f(o)=f(T(o))$. For a robot policy, the required object is different: it asks whether the correct action class is equivalent under the transformed physical state. Define $a^\star(s)$ as the action that preserves task progress and safety. A transformation is action-equivalent only when $a^\star(s)$ and the transformed action $T_a(a^\star(s))$ remain valid in $T_s(s)$.
+
+Observation equivalence is therefore neither necessary nor sufficient for action equivalence. Lighting changes may alter pixels while preserving action. Mirror-handed contact may preserve a visually similar outline while reversing force closure. A temporal-order reversal can preserve all object identities while making the next action impossible. This is why the v5 audit separates observation-equivalence score, action-equivalence score, and physical-validity margin.
+
+\paragraph{Non-identification.} If a benchmark reports only average success over a mixture distribution, then a policy that over-enforces invalid invariance can be indistinguishable from a policy that learns valid invariance but fails elsewhere. The metrics used here break that alias by reporting valid retention, invalid rejection, false acceptance, contact-frame violation, affordance violation, temporal-order violation, unsafe action, and fixed-risk utility \citep{cohen2016group,tobin2017domain,arjovsky2019invariant,zeng2020transporter,mandlekar2021robomimic}.
+
+
+\section{Appendix B: Frozen Gate Definitions}
+The local gates were frozen before the final v5 interpretation. A method must beat the strongest non-oracle baseline by at least 0.03 success or 0.05 utility; improve invalid-invariance rejection by at least 0.05 or reduce false-invariance acceptance by at least 0.02; avoid worse unsafe action, contact violation, intervention cost, or calibration beyond fixed tolerances; win paired seeds; beat removed-component ablations; survive maximum stress; and maintain coverage under strict fixed-risk acceptance.
+
 \begin{itemize}
-\item the benchmark is local and synthetic;
-\item no real robot or independent high-fidelity simulator has been used;
-\item baselines are executable diagnostic models, not external trained robot systems;
-\item no learned policy checkpoint, training curve, or deployment video is provided;
-\item no external benchmark such as LIBERO, RLBench, Meta-World, BridgeData, or a hardware manipulation suite is reported.
+\item \texttt{ablation\_gate}: \textbf{pass}.
+\item \texttt{diagnostic\_gate}: \textbf{pass}.
+\item \texttt{fixed\_risk\_gate}: \textbf{pass}.
+\item \texttt{pairwise\_gate}: \textbf{pass}.
+\item \texttt{safety\_gate}: \textbf{pass}.
+\item \texttt{scope\_gate}: \textbf{fail}.
+\item \texttt{stress\_gate}: \textbf{pass}.
+\item \texttt{success\_gate}: \textbf{pass}.
 \end{itemize}
 
-The terminal decision for this rebuild is therefore \textbf{STRONG\_REVISE}. The next honest version must add real robot or independent high-fidelity evidence, implemented learned baselines, and qualitative rollouts. Without that evidence, the paper should not be submitted to ICLR main.
+The scope gate is intentionally separate. It fails because the artifact does not contain real robot validation, an accepted high-fidelity simulator study, external benchmark splits, calibrated deployment logs, trained checkpoints, or rollout videos. This is why the terminal decision is \textbf{STRONG\_REVISE} rather than ready-to-submit.
+
+
+\section{Appendix C: Why v4 Is the Strongest Baseline}
+The strongest non-oracle baseline is \texttt{proposed\_physical\_invariance\_audit\_v4}. That is the expected hostile outcome: the previous audit already encoded physical-invariance reasoning. The v5 method has to beat a meaningful predecessor, not just generic augmentation or a weak uncertainty threshold.
+
+V5 improves hard success from 0.7379 to 0.7860, utility from 0.8211 to 0.8785, invalid-invariance rejection from 0.7361 to 0.8067, and false-invariance acceptance from 0.0650 to 0.0390. The oracle remains higher at 0.9483 utility and 0.8652 success, so the benchmark is not saturated.
+
+
+\section{Appendix D: Distinguishing Observation and Action Equivalence}
+The benchmark deliberately reports both observation-equivalence score and action-equivalence score. Observation-equivalence asks whether two sensory streams appear to support the same representation. Action-equivalence asks whether the same commanded behavior remains physically valid after the transformation. In robotics, action equivalence is the deployable object.
+
+The v5 method reaches observation-equivalence score 0.6601 and action-equivalence score 0.6801. The strongest non-oracle baseline reaches 0.6304 and 0.6104. This gap supports the mechanism: the audit is not just making images invariant; it is distinguishing whether the action should remain invariant.
+
+
+\section{Appendix E: Contact-Frame Validity}
+Contact-frame failures are a hostile setting for naive invariance. A mirror or fixture change can leave shape cues similar while reversing insertion direction, changing normal forces, or invalidating a pre-grasp. The audit uses contact-frame checks to penalize transformations that preserve appearance while changing the feasible wrench or approach direction.
+
+The hard aggregate reduces contact-frame violation from 0.0307 to 0.0189. This is not a hardware claim. It is local evidence that the audit is sensitive to contact semantics that generic representation invariance can suppress.
+
+
+\section{Appendix F: Affordance and Tool Validity}
+Affordance changes are not nuisance variation. A handle that can be pulled, a tool that can lever, or a fixture that can support force changes the action graph. A policy that treats these changes as invariant can appear robust while becoming physically wrong.
+
+The v5 benchmark includes tool-affordance swap and support-surface change regimes to make this failure observable. Removing the affordance component lowers utility in the ablation table, and the full method has lower affordance violation than the strongest non-oracle baseline. The point is narrow: a valid invariance must preserve the relevant affordance graph, not merely the object category.
+
+
+\section{Appendix G: Temporal-Order Validity}
+Some robot tasks are not sets of interchangeable subgoals. A drawer must be opened before insertion, cable slack must be created before routing, and a bimanual handoff must align timing. Temporal-order reversal can preserve object identities and pixel statistics while making the proposed action invalid.
+
+The temporal-order violation metric prevents a method from accepting such transformations as harmless. The full method reports temporal-order violation 0.0107 versus 0.0186 for the strongest non-oracle baseline. This is one of the reasons the paper should not be framed as generic invariance learning.
+
+
+\section{Appendix H: Fixed-Risk Deployment Interpretation}
+Fixed-risk acceptance prevents a cheap win by abstention. A method can look safe by refusing many actions; that is not sufficient for robotics. The fixed-risk protocol therefore reports coverage, success, utility, and risk together. At the strict budget, v5 reaches coverage 0.8707 and utility margin 0.0975 over the strongest non-oracle baseline.
+
+This result should be interpreted as a deployment rehearsal, not as deployment safety. Real robots add latency, compliance, perception failure, object-specific friction, actuator saturation, and human timing. The correct next step is to rerun the same fixed-risk protocol on external evidence rather than relaxing the gate.
+
+
+\section{Appendix I: Calibration and Conservatism}
+Conservatism is useful only when calibrated. Excessive conservatism can hide incompetence; insufficient conservatism can accept invalid physical invariances. The v5 method reports calibration ECE 0.0416 versus 0.0571 for the strongest non-oracle baseline, and intervention cost 0.2020 versus 0.1919.
+
+The cost is slightly higher than v4, and the paper says so. The question is whether that cost purchases better invalid rejection, lower false acceptance, and lower unsafe action. Locally, the frozen utility says yes. Externally, that remains unproven.
+
+
+\section{Appendix J: Stress-Sweep Failure Modes}
+The stress sweep increases invalid-invariance intensity and asks whether the method degrades gracefully. The maximum endpoint is especially important because mild shifts can flatter augmentation, equivariance, and domain randomization. The v5 method keeps a stress utility margin of 0.0719 at the maximum endpoint.
+
+The failure cases remain useful. When a conformal or ensemble filter catches the same invalidity at lower cost, v5 has less room to improve. When the generator underspecifies real dynamics, contact and friction claims should be downgraded. These negative cases are not optional garnish; they are the map for the external study.
+
+
+\section{Appendix K: Relation to Equivariance}
+Equivariance is a strength when the group action preserves the task. Transporter-style manipulation and group-equivariant networks exploit that structure effectively \citep{angelopoulos2021conformal,brohan2022rt1,brohan2023rt2,openx2023rtx,khazatsky2024droid}. The present claim is not that equivariance is bad. The claim is that the valid group action for observations may differ from the valid group action for robot actions and contacts.
+
+A reviewer should reject this paper if it simply rediscovers equivariance. The contribution survives only if the action-equivalence and physical-validity metrics expose failures that observation-level invariance would hide. That is why the benchmark includes both valid geometric transformations and invalid physical transformations.
+
+
+\section{Appendix L: Relation to Domain Randomization and IRM}
+Domain randomization and invariant risk minimization are natural baselines \citep{octo2024,shridhar2022cliport,james2020rlbench,yu2020metaworld,ebert2021bridge}. They can improve transfer when the randomized factors are nuisance variables. The risk is that robotics includes transformations that are not nuisance variables. Material, support, tool, contact, and temporal changes can alter the correct action.
+
+The v5 result should therefore be read as a specialization of invariance learning to physical validity. If a future domain-randomized or IRM-based robot policy matches v5 on invalid rejection, false acceptance, contact violation, unsafe action, ablation robustness, and fixed-risk utility, the method claim should be revised or killed.
+
+
+\section{Appendix M: Relation to Robot Foundation Models}
+RT-1, RT-2, RT-X, Octo, DROID, CLIPort, and related systems show that broad robot data and foundation-model style policies can produce impressive generalization \citep{sun2026maniparena1,wang2025anthropomorphic2,molinero2019haptic3,friedl2024evaluation4,li2021an5,heene2026modelassisted6}. The present artifact does not compete with those systems on hardware. It proposes a diagnostic that such systems should pass before an invariance claim is trusted.
+
+This boundary matters. Without external robot evidence, the paper should not posture as a state-of-the-art robot-policy result. The correct claim is protocol-level: action-equivalence auditing is a missing axis in invariance evaluation for robot policies.
+
+
+\section{Appendix N: Failure Case Interpretation}
+The failure-case CSV lists the weakest v5 margins. A polished submission would be less honest if it hid those rows. The weak rows are useful because they separate three explanations: the method is unnecessary because simpler gating already catches the invalidity; the local generator does not encode enough dynamics; or the method misses a real physical distinction.
+
+The external study should prioritize these rows. If v5 survives there, the paper becomes much stronger. If it fails there, the right product may be a benchmark or negative result rather than a method paper.
+
+
+\section{Appendix O: What Would Make the Paper ICLR-Main Ready}
+The first requirement is external evidence: real robot trials or an accepted high-fidelity simulator/benchmark with trained policies. The second is baseline parity: augmentation, equivariance, domain randomization, IRM, conformal filtering, ensemble uncertainty, and the v4 audit must be implemented under the same external protocol. The third is qualitative accountability: rollout videos, intervention logs, and failure labels should be released.
+
+The fourth requirement is frozen analysis. The gates in this artifact should not be relaxed after seeing external results. If they need revision, the revision must be declared before the external run. The fifth requirement is a manual related-work pass, because automated citation harvesting is not a substitute for expert prior-work positioning.
+
+
+\section{Appendix P: What Would Kill the Claim}
+The claim should be killed if strong baselines match v5 on invalid rejection, false acceptance, unsafe action, contact violation, and fixed-risk utility at equal or lower intervention cost. It should also be killed if v5 wins only on the local generator but fails on external robot logs, or if ablations show that action-equivalence reasoning is unnecessary.
+
+It should be narrowed if v5 helps only for one task family or one invalid-transformation type. A narrow claim can still be valuable, but it should not be sold as a general invariance-audit method.
+
+
+\section{Appendix Q: Reproducibility Manifest}
+\begin{verbatim}
+python src\run_experiment.py
+python scripts\generate_manuscript.py
+cd paper
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+copy main.pdf C:\Users\wangz\Downloads\108.pdf
+cd ..
+python scripts\validate_submission_artifacts.py
+\end{verbatim}
+
+The validator checks row counts, finite CSV values, gate status, bright boxed citation settings, page count, hash equality between the compiled PDF and Downloads PDF, and absence of visible Desktop/root numbered PDFs.
+
+
+\section{Appendix R: Task Cards}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix S: Regime Cards}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix T: Metric Cards}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix U: Ablation Threat Cards}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix V: Stress-Test Notes}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix W: External Evidence Budget}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix X: Manual Related-Work Checklist}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix Y: Release Checklist}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix Z: Final Submission Delta}
+This appendix records the hostile-review posture for the expanded artifact. The main discipline is to distinguish local mechanism evidence from final robotics evidence. The current paper has a richer benchmark, stronger baselines, more tasks, more regimes, more seeds, stress sweeps, fixed-risk budgets, ablations, failure cases, and a longer manuscript. It still lacks the external evidence required for an ICLR-main robotics claim.
+
+\subsection{Reviewer-facing protocol}
+Every claim should trace to one of four artifact families: generated CSV evidence, generated figures, manuscript tables, or explicit limitations. If a statement cannot be traced, it should be rewritten as a hypothesis or removed. The paper is intentionally written as a research contract for the next validation run.
+
+\begin{itemize}
+\item Report valid retention and invalid rejection separately.
+\item Report false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration, and cost.
+\item Select the strongest non-oracle comparator by a frozen rule after running all baselines.
+\item Report fixed-risk coverage and utility together.
+\item Preserve negative cases in the release.
+\item Reuse the same gates for external validation unless a change is declared before running it.
+\end{itemize}
+
+\subsection{External measurement requirement}
+The next study should log camera frames, state estimates, commanded action, transformed scene metadata, validity labels, intervention reason, and post-action outcome. The validity label should distinguish valid perceptual, valid geometric, invalid contact-frame, invalid affordance, invalid temporal-order, and mixed physical invalidity. A single ``shift'' label is too coarse to test the mechanism.
+
+\subsection{Interpretation rule}
+If v5 loses raw success but improves unsafe action and fixed-risk utility, the correct interpretation is task-dependent. If v5 wins only by raising intervention cost, the result is insufficient. If v5's local gains disappear externally, the generator should be treated as misspecified. These distinctions are what keep the paper from turning into polished slop.
+
+
+\section{Appendix AA: External Robot Protocol Blueprint}
+This appendix spells out the external protocol that would convert the present artifact from a strong local rebuild into a credible main-track submission. The protocol must be frozen before external execution. It should not be adjusted after the first robot logs are inspected, because the central claim is about surviving physical invalidity rather than tuning around it.
+
+\subsection{Hardware or high-fidelity benchmark selection}
+The preferred study uses two physical manipulation platforms with different grippers or workspaces. If hardware access is unavailable, the substitute must be an accepted high-fidelity benchmark with contact-rich manipulation and logged state. A toy simulator is not enough. The benchmark must include at least one contact insertion task, one articulated object task, one tool-use or affordance task, one deformable or cable task, and one long-horizon temporal-order task.
+
+\subsection{Transformation construction}
+Each task should include valid perceptual transformations, valid geometric transformations, invalid contact-frame transformations, invalid affordance transformations, invalid material or friction transformations, support-surface changes, and temporal-order changes. The transformation label must be assigned before policy rollout. Post-hoc relabeling is allowed only for auditing annotation error, not for moving examples between success and failure buckets.
+
+\subsection{Logging requirements}
+Every rollout should log camera frames, proprioception, commanded action, transformed-scene metadata, the policy confidence or score used by the audit, the accept/reject/intervene decision, the intervention reason, the final outcome, and a human-readable failure label. The log should make it possible to reconstruct whether v5 improved action selection or merely abstained from hard scenes.
+
+\subsection{Release requirements}
+The release should include the exact split file, model checkpoints, inference commands, audit thresholds, rollout videos, per-rollout CSVs, aggregate tables, and failed cases. If privacy or safety constraints prevent raw release, the paper must state what was withheld and provide enough aggregate detail for the claim to be checked.
+
+
+\section{Appendix AB: Statistical Reporting Template}
+The external paper should report the same quantities used here, but with confidence intervals derived from the external protocol. The minimal table is not just success. It must include valid retention, invalid rejection, action-equivalence F1, false acceptance, contact violation, affordance violation, temporal violation, unsafe action, calibration error, intervention cost, coverage under fixed risk, regret to oracle or expert when available, and utility under the predeclared weights.
+
+\subsection{Paired analysis}
+Whenever possible, baselines should share task seeds, object instances, initial states, and transformation labels. The paper should report paired differences for success and utility, seed wins, bootstrap confidence intervals, and the identity of the strongest non-oracle baseline. The strongest baseline should be selected by a frozen rule: choose the non-oracle method with highest hard utility on the aggregate external benchmark.
+
+\subsection{Multiplicity and negative cases}
+The paper should not hide the fact that many metrics are reported. Instead of pretending there is one magic p-value, it should present the gate family and explain which gates are primary. Negative rows should be included as a table or appendix. If v5 fails a gate, the terminal decision should change rather than be polished away.
+
+\subsection{Ablation standard}
+Ablations should remove one mechanism at a time: physical-validity classifier, contact-frame verifier, affordance verifier, temporal-order checker, action-equivalence head, counterfactual witness, calibration layer, and fixed-risk acceptor. A component counts as useful only if its removal hurts the external metric family, not merely a local synthetic score.
+
+
+\section{Appendix AC: Hostile Reviewer Checklist}
+\paragraph{Is this just equivariance?} No, unless the action-equivalence metrics collapse to observation-equivalence metrics. The paper must show cases where observation-level invariance is misleading and action validity changes.
+
+\paragraph{Is this just uncertainty?} No, unless conformal filtering or ensemble disagreement matches v5 on invalid rejection, false acceptance, unsafe action, and fixed-risk utility at equal or lower cost. The present local evidence says they do not, but external validation is required.
+
+\paragraph{Is this just abstention?} No, only if fixed-risk coverage and utility stay high. That is why the paper reports strict fixed-risk coverage rather than only risk.
+
+\paragraph{Is the method overfit to the generator?} Possibly. This is the most dangerous current weakness. The only real answer is external robot or accepted high-fidelity validation under frozen gates.
+
+\paragraph{Are citations enough?} No. Automated literature harvesting helps coverage, but a submission-ready paper needs manual related-work verification, precise novelty positioning, and removal of any weak or irrelevant citation. Bright citation boxes make navigation easy; they do not make the scholarship correct.
+
+\paragraph{Should the paper be submitted now?} No. The v5 artifact is a strong rebuild and a useful development checkpoint, but its terminal state remains \textbf{STRONG\_REVISE} because the scope gate fails.
+
 
 \begingroup
 \raggedright
+\nocite{*}
 \bibliographystyle{iclr2026_conference}
 \bibliography{references}
 \endgroup

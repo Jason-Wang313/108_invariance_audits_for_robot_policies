@@ -1,0 +1,16 @@
+comparison,baseline,is_strongest_non_oracle,mean_success_diff,ci95_success_diff,wins_success_over_seeds,mean_utility_diff,ci95_utility_diff,wins_utility_over_seeds,seeds,decision
+action_equivalence_invariance_audit_v5_vs_affordance_graph_verifier,affordance_graph_verifier,no,0.115714,0.005276,10,0.153599,0.004555,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_aggressive_augmentation_policy,aggressive_augmentation_policy,no,0.217917,0.006645,10,0.348778,0.005853,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_causal_representation_proxy,causal_representation_proxy,no,0.151399,0.00605,10,0.208998,0.005455,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_conformal_shift_filter,conformal_shift_filter,no,0.14119,0.004926,10,0.186136,0.004322,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_contact_frame_verifier,contact_frame_verifier,no,0.118244,0.008728,10,0.15705,0.007333,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_contrastive_invariance_learner,contrastive_invariance_learner,no,0.178929,0.008463,10,0.270884,0.007891,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_domain_randomization,domain_randomization,no,0.190357,0.009647,10,0.281015,0.008986,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_ensemble_disagreement_filter,ensemble_disagreement_filter,no,0.148274,0.00592,10,0.197724,0.005127,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_equivariant_policy,equivariant_policy,no,0.203482,0.005756,10,0.31038,0.005198,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_invariant_risk_minimization_proxy,invariant_risk_minimization_proxy,no,0.186012,0.008633,10,0.265765,0.00757,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_no_invariance_behavior_clone,no_invariance_behavior_clone,no,0.23253,0.00464,10,0.304417,0.003862,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_oracle_invariance_validity_supervisor,oracle_invariance_validity_supervisor,no,-0.079167,0.007863,0,-0.069751,0.005457,0,10,not_decisive
+action_equivalence_invariance_audit_v5_vs_physics_consistency_classifier,physics_consistency_classifier,no,0.115,0.007849,10,0.149076,0.007539,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_proposed_physical_invariance_audit_v4,proposed_physical_invariance_audit_v4,yes,0.048125,0.00812,10,0.057422,0.006019,10,10,proposed_better
+action_equivalence_invariance_audit_v5_vs_test_time_augmentation_voting,test_time_augmentation_voting,no,0.192143,0.008903,10,0.295944,0.007949,10,10,proposed_better
