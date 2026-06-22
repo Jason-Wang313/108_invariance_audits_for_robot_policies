@@ -536,6 +536,98 @@ Ablations should remove one mechanism at a time: physical-validity classifier, c
 
 \paragraph{Should the paper be submitted now?} No. The v5 artifact is a strong rebuild and a useful development checkpoint, but its terminal state remains \textbf{STRONG\_REVISE} because the scope gate fails.
 """)
+    sections.append(r"""
+\section{Appendix AD: External Implementation Details}
+The external implementation should attach the audit to policies that actually produce robot actions, not to a standalone scorer. For each baseline, the implementation should expose a common interface: observation input, candidate transformation metadata, proposed action, confidence or risk score, accept/reject decision, and intervention reason. The v5 audit should not receive labels unavailable to the baseline at inference time.
+
+\subsection{Policy classes}
+At least three policy classes should be evaluated: an imitation-learning policy trained on demonstrations, a foundation-model or vision-language-action policy when available, and a classical or hybrid controller for contact-rich tasks. The reason is simple: action-equivalence errors may look different when the policy is data-driven, language-conditioned, or geometry-heavy. A claim that survives only one policy class should be narrowed.
+
+\subsection{Threshold handling}
+All risk and acceptance thresholds must be selected on calibration splits and frozen before test evaluation. Thresholds should not be tuned per task unless the paper explicitly frames the method as task-specific. The test split must report both the threshold value and the number of examples rejected because those values determine whether v5 is useful or merely conservative.
+
+\subsection{Compute and memory constraints}
+The current artifact is CPU-only and RAM-light. The external implementation should preserve that spirit for the audit layer. Heavy policy training may require accelerators, but the audit itself should remain cheap enough to run alongside deployment. A method that works only by adding a large hidden model should be compared against equally strong learned-risk baselines.
+""")
+    sections.append(r"""
+\section{Appendix AE: Baseline Parity Requirements}
+The baseline set is a reviewer contract. A weak baseline set can make any audit look impressive. The external paper should include augmentation, equivariance, domain randomization, IRM-style invariance, contrastive invariance, conformal filtering, ensemble disagreement, test-time augmentation voting, physics-consistency classification, contact-frame verification, affordance verification, v4, v5, and an oracle or expert upper bound where possible.
+
+\subsection{Training parity}
+Baselines that require learning should receive the same training data, validation data, tuning budget, and policy backbone unless there is a declared reason not to. If v5 uses an extra physical-validity label, a label-matched baseline should be included so the win cannot be attributed only to extra supervision.
+
+\subsection{Inference parity}
+Baselines should operate under the same observation latency, action horizon, intervention budget, and sensor availability. A baseline should not be punished for lacking a sensor that v5 receives. Conversely, if v5 requires privileged scene metadata, that requirement must be named as a limitation.
+
+\subsection{Oracle boundary}
+The oracle is not a competitor; it is a sanity check. If v5 approaches or exceeds the oracle, the evaluation is probably broken. If the oracle is unreachable because no expert label exists, the paper should replace it with expert replay, hindsight annotation, or a conservative upper-bound analysis.
+""")
+    sections.append(r"""
+\section{Appendix AF: Data Card for Transformation Validity}
+Every transformation used in the external benchmark should have a data card. The card should state the task, object, initial state, physical transformation, whether the transformation is action-equivalent, the evidence supporting that label, and the expected failure if the label is wrong. This prevents vague statements such as ``viewpoint shift'' or ``material change'' from hiding the actual physical claim.
+
+\subsection{Label uncertainty}
+Some labels will be ambiguous. A friction change may be action-equivalent for a slow quasi-static push and invalid for a fast insertion. A support-surface change may matter only after contact. The data card should therefore include an uncertainty flag and a rule for excluding or separately analyzing ambiguous examples. Ambiguity is not a defect; hiding ambiguity is.
+
+\subsection{Counterfactual witnesses}
+For invalid transformations, the paper should provide counterfactual witnesses: what action would be safe in the original state, why that action fails after transformation, and what action would be safe instead. These witnesses are the human-readable bridge between the metric and the physical mechanism.
+
+\subsection{Dataset shift transparency}
+The data card should separate nuisance shift from semantic shift and physical-validity shift. A single ``out-of-distribution'' label is too coarse. The entire point of the paper is that not all shifts should be handled by invariance.
+""")
+    sections.append(r"""
+\section{Appendix AG: Safety and Ethics Review}
+An invariance audit can reduce unsafe commitments, but it can also introduce new failure modes. A false rejection can stop a helpful robot; a false acceptance can authorize a dangerous action; an overconfident physical-validity score can hide uncertainty from operators. The external study should therefore include a safety review before hardware deployment.
+
+\subsection{Human proximity}
+If humans are near the robot, the evaluation must include conservative stopping rules, speed limits, and manual override. The paper should distinguish unsafe action in the benchmark from real safety incidents. No result in this artifact justifies removing standard robot safety systems.
+
+\subsection{Operator burden}
+Intervention cost is not just a number. In real deployment, every rejection may burden an operator, delay a workflow, or create alert fatigue. The external study should therefore report intervention frequency by task and by invalidity type, not only an aggregate cost.
+
+\subsection{Failure disclosure}
+The final paper should disclose failures that look bad for the method. In robotics, cherry-picked videos are especially misleading. A credible release should include representative wins, losses, near misses, and ambiguous cases.
+""")
+    sections.append(r"""
+\section{Appendix AH: Manual Literature Audit Criteria}
+The present rebuild uses a clean canonical bibliography and keeps the large local literature pool as background material rather than automatic padding. Before submission, a human author should manually verify every cited paper. The check should ask whether the cited work actually supports the sentence, whether the venue/year/author metadata are correct, and whether a more central paper should be cited instead.
+
+\subsection{Must-cover areas}
+The manual audit should cover equivariant robot manipulation, domain randomization and sim-to-real, invariant risk minimization, conformal and uncertainty-based rejection, robot foundation models, manipulation benchmarks, failure prediction, recovery and safety, contact-rich manipulation, and data-centric robot generalization. If any area is missing, the related-work boundary is not ready.
+
+\subsection{Citation hygiene}
+The manuscript should not cite papers merely because they include the word ``robot.'' It should not use biomedical, industrial, or field-robot evaluation papers unless they directly support the physical-validity claim. It should not inflate the bibliography to look scholarly. The goal is a small enough set to defend and a broad enough set to avoid rediscovering known ideas.
+
+\subsection{Reviewer expectation}
+Reviewers will not reward a long bibliography if the novelty boundary is unclear. They will ask whether action-equivalence auditing is different from equivariance, uncertainty filtering, causal representation learning, and physical-consistency checking. The final related-work section should answer those questions directly with manually checked citations.
+""")
+    sections.append(r"""
+\section{Appendix AI: Task-Family Externalization Plan}
+The external validation should not simply rerun the easiest generated tasks. Each task family needs a concrete physical instantiation and a reason it tests action equivalence rather than generic robustness.
+
+\paragraph{Peg insertion.} Use valid pose perturbations and invalid mirror-handed contact setups. The action-equivalence label should depend on approach direction, contact normal, and insertion clearance. The critical failure is accepting a mirrored action that jams or damages the fixture.
+
+\paragraph{Drawer opening.} Use lighting and camera shifts as valid transformations, and handle-side, latch-state, or support-surface changes as invalid transformations. The critical failure is treating a visually similar handle as actionable when the physical precondition has changed.
+
+\paragraph{Cable routing and deformable folding.} Use transformations that preserve object identity but alter slack, tension, or fold order. The critical failure is an action that is plausible in image space but unrecoverable after deformation.
+
+\paragraph{Tool use and articulated assembly.} Use tool-affordance swaps and fixture changes. The critical failure is using the same action when the tool can no longer transmit the required force or when a hinge/joint precondition changes.
+
+\paragraph{Bimanual handoff and mobile pick-and-place.} Use temporal-order and workspace transformations. The critical failure is accepting an action before a partner, object, or support is in the correct state. This family is important because action equivalence can depend on timing rather than static geometry.
+""")
+    sections.append(r"""
+\section{Appendix AJ: Failure Adjudication Protocol}
+External failures should be adjudicated by at least two annotators with access to rollout video, robot state, commanded action, and transformation metadata. The annotators should answer three questions: was the transformation valid, was the action physically valid, and was the final failure caused by perception, planning, control, contact, timing, or an unrelated hardware issue.
+
+\subsection{Disagreement handling}
+If annotators disagree on transformation validity, the example should be marked ambiguous and reported separately. It should not be silently assigned to the category that favors v5. If annotators agree that the transformation is valid but the action fails, the failure should count against the underlying policy rather than the invariance audit unless the audit accepted a known unsafe action.
+
+\subsection{Root-cause categories}
+The root-cause categories should include perception aliasing, contact-frame inversion, affordance mismatch, temporal-order error, material or friction mismatch, controller saturation, recovery failure, and operator-induced reset. These categories make the failure table diagnostic rather than decorative.
+
+\subsection{Decision impact}
+For each failure, the paper should report whether v5 changed the decision relative to the strongest baseline. A failure where both methods act identically is different from a failure introduced by v5. Likewise, a success where v5 merely abstains is different from a success where v5 selects a safer action. This decision-impact column is essential for interpreting the method's real contribution.
+""")
     return "\n".join(sections)
 
 
