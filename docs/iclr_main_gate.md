@@ -1,21 +1,33 @@
 # ICLR Main Gate
 
-Paper: 108 invariance_audits_for_robot_policies
+Decision: no.
 
-Previous v3 decision: KILL_ARCHIVE
+Terminal decision: STRONG_REVISE.
 
-v4.1 continuation gate verdict: STRONG_REVISE
+## Local Gates
 
-Evidence digest: physical-invariance audit benchmark with 5 tasks, 7 regimes, 5 splits, 9 methods, 7 seeds, 84 episodes/group.
+- success gate: pass
+- diagnostic gate: pass
+- safety gate: pass
+- pairwise gate: pass
+- ablation gate: pass
+- stress gate: pass
+- fixed-risk gate: pass
 
-Gate outcomes:
+## Scope Gate
 
-- success gate: pass, proposed beats strongest non-oracle by `0.073` success.
-- diagnostic gate: pass, invalid-invariance rejection improves by `0.144`.
-- safety gate: pass, contact violation, unsafe action, and intervention cost fall relative to strongest non-oracle.
-- pairwise gate: pass, proposed wins 7/7 paired seeds against strongest non-oracle.
-- ablation gate: pass, full model beats the best removed component by `0.030`.
-- stress gate: pass locally, at maximum stress level `0.95` proposed success is `0.679 +/- 0.007` versus `0.594 +/- 0.007`.
-- external-validation gate: fail, no real robot or independent high-fidelity benchmark.
+Scope gate: fail.
 
-The only honest main-conference-safe decision is STRONG_REVISE: the mechanism is worth developing, but the paper is not yet submission-ready.
+Missing evidence:
+
+- real robot trials
+- accepted high-fidelity simulation benchmark
+- external benchmark split
+- calibrated deployment logs
+- trained checkpoints
+- rollout videos
+- manual related-work verification
+
+## Interpretation
+
+The v5 result is a strong local mechanism audit. It should not be submitted as an ICLR-main robotics paper until the same gates survive external robot or accepted high-fidelity validation.

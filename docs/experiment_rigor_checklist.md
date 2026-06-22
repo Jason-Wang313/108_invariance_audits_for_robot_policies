@@ -1,28 +1,24 @@
 # Experiment Rigor Checklist
 
-## v4 Local Evidence
+- [x] Frozen v5 plan before final interpretation.
+- [x] CPU-only, RAM-light executable benchmark.
+- [x] 8 task families.
+- [x] 10 transformation regimes.
+- [x] 8 splits.
+- [x] 16 methods including v4 and oracle.
+- [x] 10 paired seeds.
+- [x] 102400 main cell rows.
+- [x] 48000 stress-sweep cell rows.
+- [x] 51200 fixed-risk cell rows.
+- [x] 8000 ablation cell rows.
+- [x] 24 failure cases.
+- [x] Strongest non-oracle baseline selected by frozen aggregate utility rule.
+- [x] Success, diagnostic, safety, pairwise, ablation, stress, and fixed-risk gates pass.
+- [x] Failure cases and limitations reported honestly.
+- [ ] Real robot validation.
+- [ ] Independent high-fidelity benchmark.
+- [ ] External benchmark split.
+- [ ] Trained learned-policy checkpoints.
+- [ ] Rollout videos and deployment logs.
 
-- [x] Paper-specific physical-invariance audit benchmark.
-- [x] 5 robot task families.
-- [x] 7 invariance regimes.
-- [x] 5 stress splits.
-- [x] 9 methods including strong non-oracle baselines and oracle ceiling.
-- [x] 7 seeds.
-- [x] 84 episodes per task/regime/split/method group.
-- [x] Error bars.
-- [x] Paired seed comparisons.
-- [x] Ablations for physical-validity classification, contact-frame testing, affordance consistency, temporal-order checking, and conservatism calibration.
-- [x] Stress sweep.
-- [x] Failure cases.
-- [x] Generated figures and LaTeX tables.
-- [x] Finite CSV audit.
-
-## ICLR Main Bar Still Missing
-
-- [ ] Real-robot validation.
-- [ ] Independent high-fidelity simulator benchmark.
-- [ ] Trained learned policy/model checkpoint.
-- [ ] External implemented competing baselines.
-- [ ] Qualitative robot rollouts or videos.
-
-Decision: pass local mechanism-evidence gate; fail final main-track deployment-evidence gate; mark STRONG_REVISE.
+Conclusion: rigorous local evidence, still below final submission evidence standard.

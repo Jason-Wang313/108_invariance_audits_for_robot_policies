@@ -1,30 +1,22 @@
 # Reproducibility Checklist
 
-## What Reproduces
+Run from the repository root:
 
-- [x] `python src/run_experiment.py`
-- [x] `python -m py_compile src/run_experiment.py`
-- [x] `results/seed_task_regime_metrics.csv`
-- [x] `results/per_task_regime_metrics.csv`
-- [x] `results/seed_split_metrics.csv`
-- [x] `results/metrics.csv`
-- [x] `results/pairwise_stats.csv`
-- [x] `results/ablation_metrics.csv`
-- [x] `results/stress_sweep.csv`
-- [x] `results/failure_cases.csv`
-- [x] `figures/invariance_audit_combined_success.png`
-- [x] `figures/invariance_audit_diagnostics.png`
-- [x] `figures/invariance_audit_stress_sweep.png`
-- [x] `figures/invariance_audit_ablation.png`
-- [x] `figures/invariance_audit_contact_regret.png`
-- [x] `paper/main.tex`
-- [x] Canonical PDF: `C:/Users/wangz/Downloads/108.pdf`
+```powershell
+python src\run_experiment.py
+python scripts\generate_manuscript.py
+cd paper
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+cd ..
+Copy-Item -LiteralPath .\paper\main.pdf -Destination "$env:USERPROFILE\Downloads\108.pdf" -Force
+python scripts\validate_submission_artifacts.py
+```
 
-## What Does Not Yet Reproduce
+Validator result:
 
-- [ ] Real robot results.
-- [ ] Independent high-fidelity benchmark runs.
-- [ ] Trained learned policy checkpoints.
-- [ ] External robot-system baselines.
+`validated Paper 108 artifacts: pages=25, sha256=BDBD2E84747B74FFB8C0C70B22F7B04D88C6E855AA155D49E799984D4B582EA4`
 
-This is reproducible as a local evidence rebuild and strong-revise paper scaffold, not as a final ICLR-main empirical robotics submission.
+The final numbered PDF is stored only at `C:/Users/wangz/Downloads/108.pdf`. The validator rejects visible Desktop copies, factory-root copies, child-root copies, short PDFs, missing bright citation boxes, mismatched PDF hashes, failed local gates, and accidental ICLR-main-ready claims.
